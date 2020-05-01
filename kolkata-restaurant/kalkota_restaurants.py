@@ -16,8 +16,12 @@ import random
 import numpy as np
 import sys
 
+from probleme  import distManhattan
+from PathSplicing import SplicePathManager
+from KolkataPath import KolkataPathManager
+from Strategy import RandomRestau, Tetu, MeanRegression, WrongStochasticChoice, StochasticChoice
 
-
+import math
     
 # ---- ---- ---- ---- ---- ----
 # ---- Main                ----
@@ -32,7 +36,7 @@ def init(_boardname=None):
     game = Game('Cartes/' + name + '.json', SpriteBuilder)
     game.O = Ontology(True, 'SpriteSheet-32x32/tiny_spritesheet_ontology.csv')
     game.populate_sprite_names(game.O)
-    game.fps = 5  # frames per second
+    game.fps = 240#240#5  # frames per second
     game.mainiteration()
     game.mask.allow_overlaping_players = True
     #player = game.player
@@ -40,13 +44,18 @@ def init(_boardname=None):
 def main():
 
     #for arg in sys.argv:
-    iterations = 20 # default
+    m_ite = 20#5 # default # Kolkata
+    iterations = 60#20 # default
     if len(sys.argv) == 2:
         iterations = int(sys.argv[1])
+        m_ite = int(sys.argv[2])
     print ("Iterations: ")
     print (iterations)
+    print("Nb rounds:")
+    print(m_ite)
 
-    init()
+    init('Village_20_12')
+    # init()
     
     
     
@@ -81,74 +90,158 @@ def main():
     
     # on liste toutes les positions permises
     allowedStates = [(x,y) for x in range(nbLignes) for y in range(nbColonnes)\
-                     if (x,y) not in wallStates or  goalStates] 
+                     if (x,y) not in (wallStates + goalStates)] 
     
-    #-------------------------------
-    # Placement aleatoire des joueurs, en évitant les obstacles
-    #-------------------------------
-        
-    posPlayers = initStates
 
-    
+    # on cree une structure qui habritera les infos des joueurs
+    players_data = {j:{} for j in range(nbPlayers)}
+
+    # Initialisation des stratégies et des gains
+    teams = {}
+    # """ 2 Teams setup """
+    # # Team 1
+    # teams['Team 1'] = []
+    # for j in range(int(nbPlayers/2)):
+    #     players_data[j]['strat'] = Tetu(nbRestaus)
+    #     players_data[j]["gain"] = 0
+    #     teams['Team 1'].append(j)
+
+    # # Team 2
+    # teams['Team 2'] = []
+    # for j in range(int(nbPlayers/2), nbPlayers):
+    #     players_data[j]['strat'] = RandomRestau(nbRestaus)
+    #     players_data[j]["gain"] = 0
+    #     teams['Team 2'].append(j)
+    # """"""
+
+    """ Random setup """
+    strategies = [RandomRestau, Tetu, MeanRegression, WrongStochasticChoice, StochasticChoice]
+    # teams = {strat.__str__():[] for strat in strategies}
+    print(teams)
     for j in range(nbPlayers):
-        x,y = random.choice(allowedStates)
-        players[j].set_rowcol(x,y)
-        game.mainiteration()
-        posPlayers[j]=(x,y)
-
-
-        
-        
-    
-    #-------------------------------
-    # chaque joueur choisit un restaurant
-    #-------------------------------
-
-    restau=[0]*nbPlayers
-    for j in range(nbPlayers):
-        c = random.randint(0,nbRestaus-1)
-        print(c)
-        restau[j]=c
-    
-    #-------------------------------
-    # Boucle principale de déplacements 
-    #-------------------------------
-    
-        
-    # bon ici on fait juste plusieurs random walker pour exemple...
-    
-    for i in range(iterations):
-        
-        for j in range(nbPlayers): # on fait bouger chaque joueur séquentiellement
-            row,col = posPlayers[j]
-
-            x_inc,y_inc = random.choice([(0,1),(0,-1),(1,0),(-1,0)])
-            next_row = row+x_inc
-            next_col = col+y_inc
-            # and ((next_row,next_col) not in posPlayers)
-            if ((next_row,next_col) not in wallStates) and next_row>=0 and next_row<=19 and next_col>=0 and next_col<=19:
-                players[j].set_rowcol(next_row,next_col)
-                print ("pos :", j, next_row,next_col)
-                game.mainiteration()
-    
-                col=next_col
-                row=next_row
-                posPlayers[j]=(row,col)
+        strat = (random.choice(strategies))
+        players_data[j]['strat'] = strat(nbRestaus)
+        players_data[j]["gain"] = 0
+        if str(players_data[j]['strat']) in teams.keys():
+            teams[str(players_data[j]['strat'])].append(j)
+        else:
+            teams[str(players_data[j]['strat'])] = [j]
+    """"""
+    #==========================================================================
+    # Boucle principale
+    #==========================================================================
+    for r in range(m_ite):
+        print("-= Round", r+1, "=-")
+        # num_restau : list(num_player)
+        players_on_restau = {restau:[] for restau in range(nbRestaus)}
+        #-------------------------------
+        # Placement aleatoire des joueurs, en évitant les obstacles
+        #-------------------------------
             
-      
+        posPlayers = initStates
+
+        
+        for j in range(nbPlayers):
+            x,y = random.choice(allowedStates)
+            players[j].set_rowcol(x,y)
+            game.mainiteration()
+            posPlayers[j]=(x,y)
+            players_data[j]["pos"] = posPlayers[j]
+
+
+            
+            
+        
+        #-------------------------------
+        # chaque joueur choisit un restaurant
+        # Initialisation des path finders
+        #-------------------------------
+
+        # restau=[0]*nbPlayers
+        for j in range(nbPlayers):
+            # c = random.randint(0,nbRestaus-1)
+            # # print(c)
+            # restau[j]=c
+            players_data[j]["restau"] = players_data[j]['strat'].choice()
+            # if j == 0 :
+                # print("Player", j, "is going to restau n°", players_data[j]["restau"])
+
+
+
+            players_data[j]["path finder"] = KolkataPathManager(
+            players[j].get_rowcol(), 
+            goalStates[players_data[j]["restau"]], 
+            distManhattan, 
+            (game.screen.get_width()/game.spriteBuilder.spritesize, 
+            game.screen.get_height()/game.spriteBuilder.spritesize), 
+            wallStates)
+
+        
+        #-------------------------------
+        # Boucle principale de déplacements 
+        #-------------------------------
         
             
-            # si on est à l'emplacement d'un restaurant, on s'arrête
-            if (row,col) == restau[j]:
-                #o = players[j].ramasse(game.layers)
-                game.mainiteration()
-                print ("Le joueur ", j, " est à son restaurant.")
-               # goalStates.remove((row,col)) # on enlève ce goalState de la liste
+        for i in range(iterations):
+            
+            for j in range(nbPlayers): # on fait bouger chaque joueur séquentiellement
+                old_row,old_col = posPlayers[j]
+                players_data[j]["path finder"].set_currPos((old_row,old_col))
+                # x_inc,y_inc = random.choice([(0,1),(0,-1),(1,0),(-1,0)])
+                # next_row = row+x_inc
+                # next_col = col+y_inc
+                # and ((next_row,next_col) not in posPlayers)
+
+                next_row, next_col = players_data[j]["path finder"].pop_step().etat
+
+                if ((next_row,next_col) not in wallStates) and next_row>=0 and next_row<=19 and next_col>=0 and next_col<=19:
+                    players[j].set_rowcol(next_row,next_col)
+                    # print ("pos :", j, next_row,next_col)
+                    game.mainiteration()
+        
+                    col=next_col
+                    row=next_row
+                    posPlayers[j]=(row,col)
                 
-                
-                break
+        
             
-    
+                
+                # si on est à l'emplacement d'un restaurant, on s'arrête
+                if (row,col) == goalStates[players_data[j]["restau"]] and (old_row, old_col) != (row, col):
+                    #o = players[j].ramasse(game.layers)
+                    game.mainiteration()
+                    print (j, "->", players_data[j]["restau"])
+                    players_on_restau[players_data[j]["restau"]].append(j)
+                # goalStates.remove((row,col)) # on enlève ce goalState de la liste
+                    
+                    
+                    break
+        
+        freq = []
+        freq_plyrs = []
+        # Fin du round, distribution des gains
+        for restau in range(nbRestaus):
+            plyrs = players_on_restau[restau]
+            freq.append(len(plyrs))
+            freq_plyrs.append(plyrs)
+            if len(plyrs) > 0:
+                players_data[random.choice(plyrs)]['gain'] += 1
+        # Affichage des gain
+        print("Fréquentation :", freq)
+        print("Répartition :", freq_plyrs)
+        scores = [players_data[j]['gain'] for j in range(nbPlayers)]
+        print("Scores :", scores)
+
+        for t in teams.keys():
+            # print("Score", t, " :", math.fsum([scores[j] for j in teams[t]]))
+            moy = math.fsum([scores[j] for j in teams[t]]) / int(len(teams[t]))
+            moy /= m_ite
+            print("Score moyen d'un joueur de",t,":", moy)
+
+        # on informe les joueurs des fréquentations
+        for j in range(nbPlayers):
+            players_data[j]['strat'].append(freq)
+
     pygame.quit()
     
         
