@@ -44,6 +44,16 @@ class Tetu(Strategy):
     def choice(self):
         return self.favori
 
+class Idle(Strategy):
+    def __init__(self, nbRestaus):
+        super().__init__(nbRestaus)
+    @staticmethod
+    def __str__():
+        return "Idle"
+
+    def choice(self):
+        return -1
+
 
 class MeanRegression(Strategy):
     """
@@ -157,7 +167,7 @@ class StochasticChoice(Strategy):
             # 2 -> 1/2+1 -> 0.3333...
             # etc
             restau = self.last_restau
-            div = (1/(self.knowledge[-1][self.last_restau]*2 + 1))
+            div = (1/(self.knowledge[-1][self.last_restau] + 1))
             if random.randint(0, 100) > div * 100:    
                 while restau == self.last_restau:
                     restau = random.randint(0, self.nbRestaus-1)

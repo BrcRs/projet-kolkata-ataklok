@@ -18,8 +18,8 @@ import sys
 
 from probleme  import distManhattan
 from PathSplicing import SplicePathManager
-from KolkataPath import KolkataPathManager
-from Strategy import RandomRestau, Tetu, MeanRegression, WrongStochasticChoice, StochasticChoice
+from KolkataPath import KolkataPathManager, IdlePathManager
+from Strategy import RandomRestau, Tetu, MeanRegression, WrongStochasticChoice, StochasticChoice, Idle
 
 import math
     
@@ -29,23 +29,26 @@ import math
 
 game = Game()
 
-def init(_boardname=None):
+def init(_boardname=None, _fps=60):
     global player,game
     # pathfindingWorld_MultiPlayer4
     name = _boardname if _boardname is not None else 'kolkata_6_10'
     game = Game('Cartes/' + name + '.json', SpriteBuilder)
     game.O = Ontology(True, 'SpriteSheet-32x32/tiny_spritesheet_ontology.csv')
     game.populate_sprite_names(game.O)
-    game.fps = 240#240#5  # frames per second
+    game.fps = _fps#240#5  # frames per second
     game.mainiteration()
     game.mask.allow_overlaping_players = True
     #player = game.player
     
-def main():
+def main(_m_ite=5, _map='kolkata_6_10', _nbPlayers=20, _nbRestaus=20, _nbTeams=0, _strats=[], _fps=5, _effectifs=[], _fastmode=False):
 
     #for arg in sys.argv:
-    m_ite = 20#5 # default # Kolkata
-    iterations = 60#20 # default
+    m_ite = _m_ite # default # Kolkata
+    if _fastmode:
+        iterations=20
+    else:
+        iterations = 60#20 # default
     if len(sys.argv) == 2:
         iterations = int(sys.argv[1])
         m_ite = int(sys.argv[2])
@@ -54,7 +57,7 @@ def main():
     print("Nb rounds:")
     print(m_ite)
 
-    init('Village_20_12')
+    init(_map, (_fps/20) * _nbPlayers)
     # init()
     
     
@@ -71,7 +74,7 @@ def main():
     
     
     players = [o for o in game.layers['joueur']]
-    nbPlayers = len(players)
+    nbPlayers = min(_nbPlayers, len(players))
     
     
     # on localise tous les états initiaux (loc du joueur)
@@ -82,7 +85,7 @@ def main():
     # on localise tous les objets  ramassables (les restaurants)
     goalStates = [o.get_rowcol() for o in game.layers['ramassable']]
     print ("Goal states:", goalStates)
-    nbRestaus = len(goalStates)
+    nbRestaus = min(_nbRestaus, len(goalStates))
         
     # on localise tous les murs
     wallStates = [w.get_rowcol() for w in game.layers['obstacle']]
@@ -97,36 +100,37 @@ def main():
     players_data = {j:{} for j in range(nbPlayers)}
 
     # Initialisation des stratégies et des gains
+    # Et des équipes !
+    nbTeams = _nbTeams
     teams = {}
-    # """ 2 Teams setup """
-    # # Team 1
-    # teams['Team 1'] = []
-    # for j in range(int(nbPlayers/2)):
-    #     players_data[j]['strat'] = Tetu(nbRestaus)
-    #     players_data[j]["gain"] = 0
-    #     teams['Team 1'].append(j)
+    if nbTeams == 0:
+        """ Random setup """
+        strategies = [RandomRestau, Tetu, MeanRegression, WrongStochasticChoice, StochasticChoice]
+        # teams = {strat.__str__():[] for strat in strategies}
+        print(teams)
+        for j in range(nbPlayers):
+            strat = (random.choice(strategies))
+            players_data[j]['strat'] = strat(nbRestaus)
+            players_data[j]["gain"] = 0
+            if str(players_data[j]['strat']) in teams.keys():
+                teams[str(players_data[j]['strat'])].append(j)
+            else:
+                teams[str(players_data[j]['strat'])] = [j]
+        """"""
+    else:
+        """ Multiple Teams setup """
+        # players_per_team = int(nbPlayers/nbTeams)
+        players_placed = 0
+        for cptTeams in range(nbTeams):
+            strat = _strats[cptTeams]
+            teams['Team '+str(cptTeams+1)+' : ' + strat.__str__()] = []
 
-    # # Team 2
-    # teams['Team 2'] = []
-    # for j in range(int(nbPlayers/2), nbPlayers):
-    #     players_data[j]['strat'] = RandomRestau(nbRestaus)
-    #     players_data[j]["gain"] = 0
-    #     teams['Team 2'].append(j)
-    # """"""
-
-    """ Random setup """
-    strategies = [RandomRestau, Tetu, MeanRegression, WrongStochasticChoice, StochasticChoice]
-    # teams = {strat.__str__():[] for strat in strategies}
-    print(teams)
-    for j in range(nbPlayers):
-        strat = (random.choice(strategies))
-        players_data[j]['strat'] = strat(nbRestaus)
-        players_data[j]["gain"] = 0
-        if str(players_data[j]['strat']) in teams.keys():
-            teams[str(players_data[j]['strat'])].append(j)
-        else:
-            teams[str(players_data[j]['strat'])] = [j]
-    """"""
+            for j in range(players_placed, players_placed + _effectifs[cptTeams]):
+                players_data[j]['strat'] = strat(nbRestaus)
+                players_data[j]["gain"] = 0
+                teams['Team '+str(cptTeams+1)+' : ' + strat.__str__()].append(j)
+            players_placed += _effectifs[cptTeams]
+        """"""
     #==========================================================================
     # Boucle principale
     #==========================================================================
@@ -162,19 +166,25 @@ def main():
             # c = random.randint(0,nbRestaus-1)
             # # print(c)
             # restau[j]=c
+            # input("debug: j=" + str(j))
+            # input("debug: nbPlayers=" + str(nbPlayers))
             players_data[j]["restau"] = players_data[j]['strat'].choice()
             # if j == 0 :
                 # print("Player", j, "is going to restau n°", players_data[j]["restau"])
 
+            if players_data[j]["restau"] < 0:
+                players_data[j]["path finder"] = IdlePathManager(
+                players[j].get_rowcol())
+            else:
+                players_data[j]["path finder"] = KolkataPathManager(
+                players[j].get_rowcol(), 
+                goalStates[players_data[j]["restau"]], 
+                distManhattan, 
+                (game.screen.get_width()/game.spriteBuilder.spritesize, 
+                game.screen.get_height()/game.spriteBuilder.spritesize), 
+                wallStates)
 
-
-            players_data[j]["path finder"] = KolkataPathManager(
-            players[j].get_rowcol(), 
-            goalStates[players_data[j]["restau"]], 
-            distManhattan, 
-            (game.screen.get_width()/game.spriteBuilder.spritesize, 
-            game.screen.get_height()/game.spriteBuilder.spritesize), 
-            wallStates)
+            # print(j, "is going to", goalStates[players_data[j]["restau"]])
 
         
         #-------------------------------
@@ -185,14 +195,20 @@ def main():
         for i in range(iterations):
             
             for j in range(nbPlayers): # on fait bouger chaque joueur séquentiellement
+                ## Boost performances, but the game gets wierd
+                if posPlayers[j] == goalStates[players_data[j]["restau"]] and _fastmode:
+                    continue
                 old_row,old_col = posPlayers[j]
-                players_data[j]["path finder"].set_currPos((old_row,old_col))
+                if not _fastmode:
+                    players_data[j]["path finder"].set_currPos((old_row,old_col))
                 # x_inc,y_inc = random.choice([(0,1),(0,-1),(1,0),(-1,0)])
                 # next_row = row+x_inc
                 # next_col = col+y_inc
                 # and ((next_row,next_col) not in posPlayers)
-
-                next_row, next_col = players_data[j]["path finder"].pop_step().etat
+                if _fastmode:
+                    next_row, next_col = players_data[j]["path finder"].get_end().etat
+                else:
+                    next_row, next_col = players_data[j]["path finder"].pop_step().etat
 
                 if ((next_row,next_col) not in wallStates) and next_row>=0 and next_row<=19 and next_col>=0 and next_col<=19:
                     players[j].set_rowcol(next_row,next_col)
@@ -236,7 +252,7 @@ def main():
             # print("Score", t, " :", math.fsum([scores[j] for j in teams[t]]))
             moy = math.fsum([scores[j] for j in teams[t]]) / int(len(teams[t]))
             moy /= m_ite
-            print("Score moyen d'un joueur de",t,":", moy)
+            print("Score moyen d'un joueur de",t,":", (round(moy * 10000))/100, "%")
 
         # on informe les joueurs des fréquentations
         for j in range(nbPlayers):

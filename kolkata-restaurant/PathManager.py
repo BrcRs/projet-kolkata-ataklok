@@ -158,6 +158,9 @@ class PathManager(object):
     def print_path_history(self):
         for ph in self.path_history:
             print(ph)
+    def get_end(self):
+        if len(self.path) > 0:
+            return self.path[0]
 
 # def augment_posList(posList):
 #     newList = []
