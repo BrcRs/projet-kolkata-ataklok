@@ -1,6 +1,7 @@
 # projet-ia-jeux2020
 
 Ce répertoire contient la description et le squelette du projet de l'UE AI et Jeux.
+Rapport disponible dans `Rapport.ipynb`
 
 ## Présentation générale du problème
 Le projet s'inspire du Kolkata Paise Restaurant Problem, une variante du problème de minorité du [bar El Farol](https://en.wikipedia.org/wiki/El_Farol_Bar_problem).
