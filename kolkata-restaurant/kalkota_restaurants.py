@@ -46,7 +46,7 @@ def main(_m_ite=5, _map='kolkata_6_10', _nbPlayers=20, _nbRestaus=20, _nbTeams=0
     #for arg in sys.argv:
     m_ite = _m_ite # default # Kolkata
     if _fastmode:
-        iterations=20
+        iterations=23
     else:
         iterations = 60#20 # default
     if len(sys.argv) == 2:

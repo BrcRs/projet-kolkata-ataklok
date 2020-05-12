@@ -112,8 +112,8 @@ Le jeu se déroule sur plusieurs itérations (*m*, fixé à l'avance).\n")
 
 
         """ Choisir carte personnalisée ? """
-        rep = Question.yes_or_no(
-            "\nSouhaitez-vous utiliser une carte personnalisée ? (o/n)\n >>> ",
+        rep = not Question.yes_or_no(
+            "\nSouhaitez-vous utiliser une carte préconçue ? (o/n)\n >>> ",
             affirmatif,
             negatif,
             "\nRéponse invalide\n"
