@@ -172,7 +172,53 @@ def print_format_table():
             print(s1)
         print('\n')
 
+def printData(name, _extended_ascii=True, _colors=True):
+    data = {
+        '1_random' : ([
+                            ['Nb joueurs\\Nb restaurants','2','10','20'], 
+                            ['2', 74.5, 94.5, 97.5], 
+                            ['10', 20, 63.6, 83.1], 
+                            ['20', 10, 43.75, 63.95]], [(50, [ BOLD]), (75, [MAGENTA, BOLD]), (100, [RED, BOLD])]),
+        '1_tetu' : ([
+                            ['Nb joueurs\\Nb restaurants','2','10','20'], 
+                            ['2', 100, 100, 100], 
+                            ['10', 20, 70, 80], 
+                            ['20', 10, 50, 70]], [(50, [ BOLD]), (75, [MAGENTA, BOLD]), (100, [RED, BOLD])]),
+        '1_mere' : ([
+                            ['Nb joueurs\\Nb restaurants','2','10','20'], 
+                            ['2', 51, 51, 51], 
+                            ['10', 10.2, 10.8, 11.2], 
+                            ['20', 5.1, 5.8, 6.2]], [(50, [ BOLD]), (75, [MAGENTA, BOLD]), (100, [RED, BOLD])]),
+        '1_wrostocho' : ([
+                            ['Nb joueurs\\Nb restaurants','2','10','20'], 
+                            ['2', 74, 80, 81], 
+                            ['10', 17.8, 46.4, 48], 
+                            ['20', 10, 35.2, 35.9]], [(50, [ BOLD]), (75, [MAGENTA, BOLD]), (100, [RED, BOLD])]),
+        '1_stocho' : ([
+                            ['Nb joueurs\\Nb restaurants','2','10','20'], 
+                            ['2', 71, 93, 97], 
+                            ['10', 19.4, 67.4, 79.8], 
+                            ['20', 10, 45.1, 66.2]], [(50, [ BOLD]), (75, [MAGENTA, BOLD]), (100, [RED, BOLD])]),
+        'all_vs_alea' : ([
+                            ['Nb restaurants','Random', 'Têtu', 'MeanRegression', 'W.Stochastic', 'Stochastic'], 
+                            ['2',  5,  7,  12, 9,  12], 
+                            ['10', 42, 35, 45, 43, 42], 
+                            ['20', 63, 58, 62, 56, 62]], [(20, [BOLD]), (50, [MAGENTA, BOLD]), (100, [RED, BOLD])])
+    }
+    if name not in data.keys():
+        print("...Unknown name provided...")
+        return
 
+    if _colors:
+        _gradient = data[name][1]
+    else:
+        _gradient = []
+
+    table = tablify(
+                    data[name][0], 
+                    extended_ascii=_extended_ascii, 
+                    gradient=_gradient)
+    print(table)
 
 def main():  
 
