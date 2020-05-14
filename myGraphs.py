@@ -14,6 +14,8 @@ ON_MAGENTA = '\33[45m'
 ON_YELLOW = '\33[43m'
 BLACK = '\33[30m'
 
+COLORS = [MAGENTA, BLUE, GREEN, YELLOW, RED, BOLD, UNDERLINE, ON_BLUE, ON_RED,
+          ON_MAGENTA, ON_YELLOW, BLACK]
 
 def cstring(text, _clist):
     """ Returns text in color
@@ -55,25 +57,28 @@ def gradientify(n, steps_colors):
             return cstring(str(n), steps_colors[i][1])
 
 
-def tablify(mat, invert=False, replace=(None, None), extended_ascii=True, fixedCols=[], gradient=[]) :
-    """ Returns a (str) table containing the (str) items of the matrix.
+def tablify(mat, invert=False, replace=(None, None), extended_ascii=True, fixedCols=[], gradient=[], _colorMax='') :
+    """ Returns a (str) table containing the items of the matrix.
 
     In :
-     --   mat : list(list(alpha))
-     --  invert : boolean
+    --   mat : list(list(alpha))
+    --  invert : boolean
             If True, lines become columns, columns become lines.
-     -- replace : (str, str)
+    -- replace : (str, str)
             Instead of printing replace[0] when encountered, print replpace[1].
     -- extended_ascii : boolean
             if True, uses extended ascii.
     -- fixedCol : list(int)
-            ...
+            Specifies sizes (width) for each column.
     -- gradient : list((number, str))
-        example : gradient=[(20, BLUE), (40, RED), (80, YELLOW)]
+            example : gradient=[(20, BLUE), (40, RED), (80, YELLOW)]
             makes every number in the mat colored in BLUE if under 20, RED if under 40 etc.
+    -- _colorMax : str
+            TODO
+            if not empty, colors the maximum value of each line with the provided color
 
     Out :
-     -- : str
+    -- : str
     """
     symbols = {}
     if extended_ascii :
@@ -107,7 +112,7 @@ def tablify(mat, invert=False, replace=(None, None), extended_ascii=True, fixedC
         matCopy = matCopy2
     """                       """
 
-    # sizes : list(int), liste des tailles des colonnes
+    # sizes : list(int), list of width of each col
     sizes = [0] * len(matCopy[0])
 
     """ Updating optimal column sizes """
@@ -143,6 +148,9 @@ def tablify(mat, invert=False, replace=(None, None), extended_ascii=True, fixedC
                 tab += replace[1] + " " * ((sizes[j]) - len(str(matCopy[i][j])))
 
             else :
+                # if _colorMax in COLORS and type(matCopy[i][j]) in [float, int] and matCopy[i][j] == max([e for e in matCopy[i] if e in [float, int]]):
+                    # tab += cstring(str(matCopy[i][j]), _colorMax) + " " * ((sizes[j]) - len(str(matCopy[i][j])))
+
                 if len(gradient) > 0 and type(matCopy[i][j]) in [float, int]:
                     tab += gradientify(matCopy[i][j], gradient) + " " * ((sizes[j]) - len(str(matCopy[i][j])))
                 else:
@@ -174,40 +182,74 @@ def print_format_table():
 
 def printData(name, _extended_ascii=True, _colors=True):
     data = {
-        '1_random' : ([
-                            ['Nb joueurs\\Nb restaurants','2','10','20'], 
-                            ['2', 74.5, 94.5, 97.5], 
-                            ['10', 20, 63.6, 83.1], 
-                            ['20', 10, 43.75, 63.95]], [(50, [ BOLD]), (75, [MAGENTA, BOLD]), (100, [RED, BOLD])]),
-        '1_tetu' : ([
-                            ['Nb joueurs\\Nb restaurants','2','10','20'], 
-                            ['2', 100, 100, 100], 
-                            ['10', 20, 70, 80], 
-                            ['20', 10, 50, 70]], [(50, [ BOLD]), (75, [MAGENTA, BOLD]), (100, [RED, BOLD])]),
-        '1_mere' : ([
+        '1_random' : (
+                [
+                    ['Nb joueurs\\Nb restaurants','2','10','20'], 
+                    ['2', 74.5, 94.5, 97.5], 
+                    ['10', 20, 63.6, 83.1], 
+                    ['20', 10, 43.75, 63.95]], 
+                [(50, [ BOLD]), (75, [MAGENTA, BOLD]), (100, [RED, BOLD])],
+                "Probabilité d'obtenir un point à une manche donnée avec la stratégie Random (en %)"),
+        '1_tetu' : (
+                [
+                    ['Nb joueurs\\Nb restaurants','2','10','20'], 
+                    ['2', 100, 100, 100], 
+                    ['10', 20, 70, 80], 
+                    ['20', 10, 50, 70]], 
+                [(50, [ BOLD]), (75, [MAGENTA, BOLD]), (100, [RED, BOLD])],
+                "Probabilité d'obtenir un point à une manche donnée avec la stratégie Tetu (en %)"),
+        '1_mere' : (
+                [
                             ['Nb joueurs\\Nb restaurants','2','10','20'], 
                             ['2', 51, 51, 51], 
                             ['10', 10.2, 10.8, 11.2], 
-                            ['20', 5.1, 5.8, 6.2]], [(50, [ BOLD]), (75, [MAGENTA, BOLD]), (100, [RED, BOLD])]),
-        '1_wrostocho' : ([
+                            ['20', 5.1, 5.8, 6.2]], 
+                [(50, [ BOLD]), (75, [MAGENTA, BOLD]), (100, [RED, BOLD])],
+                "Probabilité d'obtenir un point à une manche donnée avec la stratégie Retour à la normale (en %)"),
+        '1_wrostocho' : (
+                [
                             ['Nb joueurs\\Nb restaurants','2','10','20'], 
                             ['2', 74, 80, 81], 
                             ['10', 17.8, 46.4, 48], 
-                            ['20', 10, 35.2, 35.9]], [(50, [ BOLD]), (75, [MAGENTA, BOLD]), (100, [RED, BOLD])]),
-        '1_stocho' : ([
+                            ['20', 10, 35.2, 35.9]], 
+                [(50, [ BOLD]), (75, [MAGENTA, BOLD]), (100, [RED, BOLD])],
+                "Probabilité d'obtenir un point à une manche donnée avec la stratégie Wrong Stochastic Choice (en %)"),
+        '1_stocho' : (
+                [
                             ['Nb joueurs\\Nb restaurants','2','10','20'], 
                             ['2', 71, 93, 97], 
                             ['10', 19.4, 67.4, 79.8], 
-                            ['20', 10, 45.1, 66.2]], [(50, [ BOLD]), (75, [MAGENTA, BOLD]), (100, [RED, BOLD])]),
-        'all_vs_alea' : ([
+                            ['20', 10, 45.1, 66.2]], 
+                [(50, [ BOLD]), (75, [MAGENTA, BOLD]), (100, [RED, BOLD])],
+                "Probabilité d'obtenir un point à une manche donnée avec la stratégie Stochastic Choice (en %)"),
+        'all_vs_alea' : (
+                [
                             ['Nb restaurants','Random', 'Têtu', 'MeanRegression', 'W.Stochastic', 'Stochastic'], 
                             ['2',  5,  7,  12, 9,  12], 
                             ['10', 42, 35, 45, 43, 42], 
-                            ['20', 63, 58, 62, 56, 62]], [(20, [BOLD]), (50, [MAGENTA, BOLD]), (100, [RED, BOLD])])
+                            ['20', 63, 58, 62, 56, 62]], 
+                [(20, [BOLD]), (50, [MAGENTA, BOLD]), (100, [RED, BOLD])],
+                "Probabilité d'obtenir un point à une manche donnée en fonction du nombre de restaurants (en %)"),
+        '5_mere_15_random' : (
+                [
+                            ['Nb restaurants','5 vs 15', '1 vs 19'], 
+                            ['2',  10.4, 12], 
+                            ['10', 16.4, 45], 
+                            ['20', 19.6, 62]], 
+                [(20, [BOLD]), (50, [MAGENTA, BOLD]), (100, [RED, BOLD])],
+                "Probabilité d'obtenir un point à une manche donnée en fonction du nombre de restaurants (en %)\n\
+comparaison du cas 5 contre 15 et 1 contre 19"),
+        'all_vs_all' : (
+                [
+                            ['Nb restaurants','Random', 'Têtu', 'MeanRegression', 'W.Stochastic', 'Stochastic'], 
+                            ['2',  11,   11, 11,    8,    9], 
+                            ['10', 57.5, 34, 11.5, 46.5, 48], 
+                            ['20', 69, 46.5, 16, 53.5, 69.5]], 
+                [(20, [BOLD]), (50, [MAGENTA, BOLD]), (100, [RED, BOLD])],
+                "Probabilité d'obtenir un point à une manche donnée en fonction du nombre de restaurants (en %)")
     }
     if name not in data.keys():
-        print("...Unknown name provided...")
-        return
+        raise ValueError("Unknown name provided")
 
     if _colors:
         _gradient = data[name][1]
@@ -218,20 +260,13 @@ def printData(name, _extended_ascii=True, _colors=True):
                     data[name][0], 
                     extended_ascii=_extended_ascii, 
                     gradient=_gradient)
-    print(table)
+    print(data[name][2], "\n" + table)
 
-def main():  
-
-    mat = [
-        [5, 1, 2, 4, 7, 2],
-        [5, 4, 8, 1, 6, 7],
-        [4, 5, 4, 7, 1, 0],
-        [1, 5, 9, 4, 6, 2]
-    ]
-    color_mat = gradient_color(mat, [(2, GREEN), (4, [ON_BLUE, BOLD]), (6, RED), (8, MAGENTA), (10, UNDERLINE)])
-    # print(color_mat)
-
-    print(tablify(color_mat))
+def main():
+    print("Example:")
+    extended_ascii = True
+    colors = True
+    printData("1_random", _extended_ascii=extended_ascii, _colors=colors)
 
     # print_format_table()
 

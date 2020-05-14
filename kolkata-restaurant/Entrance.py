@@ -113,7 +113,7 @@ Le jeu se déroule sur plusieurs itérations (*m*, fixé à l'avance).\n")
 
         """ Choisir carte personnalisée ? """
         rep = not Question.yes_or_no(
-            "\nSouhaitez-vous utiliser une carte préconçue ? (o/n)\n >>> ",
+            "\nSouhaitez-vous utiliser une carte par défaut ? (o/n)\n >>> ",
             affirmatif,
             negatif,
             "\nRéponse invalide\n"
@@ -192,7 +192,7 @@ Le jeu se déroule sur plusieurs itérations (*m*, fixé à l'avance).\n")
                 print("Equipe", nbEquipes - 1, ":", nbJoueursRestants)
                 effectifs_equipes.append(nbJoueursRestants)
                 if 0 in effectifs_equipes:
-                    print("Un équipe a 0 joueurs. Veuillez recommencer.")
+                    print("Une équipe a 0 joueurs. Veuillez recommencer.")
                     effectifs_equipes = []
                     nbJoueursRestants = nbJoueurs
 
