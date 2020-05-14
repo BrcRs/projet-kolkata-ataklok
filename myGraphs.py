@@ -66,8 +66,8 @@ def tablify(mat, invert=False, replace=(None, None), extended_ascii=True, fixedC
             Instead of printing replace[0] when encountered, print replpace[1].
     -- extended_ascii : boolean
             if True, uses extended ascii.
-    -- fixedCol : int
-            if fixedCol != -1, fix the column size to fixedCol.
+    -- fixedCol : list(int)
+            ...
     -- gradient : list((number, str))
         example : gradient=[(20, BLUE), (40, RED), (80, YELLOW)]
             makes every number in the mat colored in BLUE if under 20, RED if under 40 etc.
